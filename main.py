@@ -14,8 +14,8 @@ def os_boot():
     if os.path.exists("sysroot") == True:
         os.chdir("sysroot")
         # Checks if the config exists if not invokes the os_config function
-        if os.path.exists("config.cnfg") == True:
-          with open("config.cnfg", "r") as config:
+        if os.path.exists("sysconf/sysconfig.cnfg") == True:
+          with open("sysconf/sysconfig.cnfg", "r") as config:
            contents = config.readlines()
            sys_dir = contents[0].strip()
            usr_name = contents[1].strip()
@@ -85,37 +85,45 @@ def os_config():
         # Creates the log directory 
         os.mkdir("syslog", exist_ok = True)
         log_dir = "syslog"
+        # Creates the config directory
+        os.mkdir("sysconf")
+        conf_dir = "sysconf"
+        with open("syslog/config.log", "w") as conflog:
+            # Gets the username
+            usr_name = input("Please input a username: ")
+            conflog.writelines(f"Username written to configuration file as {usr_name} at {datetime.datetime.now()}\n")
+            # Asks the user if they want a password
+            usr_psswd_status = input("Would you like a password for your login? (Y/N): ")
+            hashed_psswd = ""
+            if usr_psswd_status.lower() == "y":
+                usr_psswd = input("Please input a password: ")
+                hashed_psswd = hashlib.sha256(usr_psswd.encode()).hexdigest()
+                conflog.writelines(f"Password hashed and written as {hashed_psswd} at {datetime.datetime.now()}\n")
+            elif usr_psswd_status.lower() == "n":
+                conflog.writelines(f"No password has been configured\n")
+                pass
+            
+            # Gets the machine name
+            mchn_name = input("Please input a name for your machine: ")
+            conflog.write(f"Machine name written to configuration file as {mchn_name} at {datetime.datetime.now()}\n")
 
-        # Gets the username
-        usr_name = input("Please input a username: ")
-        
-        # Asks the user if they want a password
-        usr_psswd_status = input("Would you like a password for your login? (Y/N): ")
-        hashed_psswd = ""
-        if usr_psswd_status.lower() == "y":
-            usr_psswd = input("Please input a password: ")
-            hashed_psswd = hashlib.sha256(usr_psswd.encode()).hexdigest()
-        elif usr_psswd_status.lower() == "n":
-            pass
-        
-        # Gets the machine name
-        mchn_name = input("Please input a name for your machine: ")
-        
-        # Finishes the config by writing the data to a file
-        cfg_status = "True"
-        
-        # Creates a file for the config
-        with open("config.cnfg", "w") as config:
-            config.writelines([f"{sys_dir}\n", f"{usr_name}\n", f"{usr_psswd_status}\n", f"{hashed_psswd}\n", f"{mchn_name}\n", f"{cfg_status}\n", f"{log_dir}\n"])
-        # Creates a file for hashed data from the config file used in integrity checks
-        with open("hashes.chk", "w") as hashes:
-            hashes.writelines([f"{hashlib.sha256(sys_dir.encode()).hexdigest()}\n", f"{hashlib.sha256(usr_name.encode()).hexdigest()}\n", f"{hashlib.sha256(mchn_name.encode()).hexdigest()}\n", f"{hashlib.sha256(log_dir.encode()).hexdigest()}\n"])
+            # Finishes the config by writing the data to a file
+            cfg_status = "True"
+            conflog.writelines(f"Configuration status has been set as {cfg_status} at {datetime.datetime.now()}")
+
+            # Creates a file for the config
+            with open("sysconf/sysconfig.cnfg", "w") as config:
+                config.writelines([f"{sys_dir}\n", f"{usr_name}\n", f"{usr_psswd_status}\n", f"{hashed_psswd}\n", f"{mchn_name}\n", f"{cfg_status}\n", f"{log_dir}\n"])
+            conflog.writelines(f"Configuration has been written to the main config file at {datetime.datetime.now()}")
+            # Creates a file for hashed data from the config file used in integrity checks
+            with open("hashes.chk", "w") as hashes:
+                hashes.writelines([f"{hashlib.sha256(sys_dir.encode()).hexdigest()}\n", f"{hashlib.sha256(usr_name.encode()).hexdigest()}\n", f"{hashlib.sha256(mchn_name.encode()).hexdigest()}\n", f"{hashlib.sha256(log_dir.encode()).hexdigest()}\n"])
         
 # Defines the function responsible for logon
 def logon():
     # Gets the username
     username = input("Username: ")
-    with open("config.cnfg","r") as config:
+    with open("sysconfig.cnfg","r") as config:
         confcon = config.readlines()
         if confcon[2] == "y":
             password = input("Password: ")
