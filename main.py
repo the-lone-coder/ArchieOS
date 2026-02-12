@@ -14,32 +14,40 @@ def os_boot():
     # Checks for a sysroot directory and switches into it:
     if os.path.exists("sysroot") == True:
         os.chdir("sysroot")
+        with open("syslog/boot.log") as bootlog:
         # Checks if the config exists if not invokes the os_config function
-        if os.path.exists("sysconf/sysconfig.cnfg") == True:
-          with open("sysconf/sysconfig.cnfg", "r") as config:
-           contents = config.readlines()
-           sys_dir = contents[0].strip()
-           usr_name = contents[1].strip()
-           mchn_name = contents[4].strip()
-           cfg_status = contents[5].strip()
-           log_dir = contents[6].strip()
-           # Checks all the data by invoking
-           print("Begining system integrity check")
-           force_reconfig=os_int_check(sys_dir,usr_name,mchn_name,cfg_status,log_dir,force_reconfig)
-           if force_reconfig == True:
+            if os.path.exists("sysconf/sysconfig.cnfg", "w") == True:
+              bootlog.writelines("sysconf found")
+              with open("sysconf/sysconfig.cnfg", "r") as config:
+               contents = config.readlines()
+               sys_dir = contents[0].strip()
+               bootlog.writelines(f"sys_dir copied to boot at {datetime.datetime.now()}\n")
+               usr_name = contents[1].strip()
+               bootlog.writelines(f"usr_name copied to boot at {datetime.datetime.now()}\n")
+               mchn_name = contents[4].strip()
+               bootlog.writelines(f"mchn_name copied to boot at {datetime.datetime.now()}\n")
+               cfg_status = contents[5].strip()
+               bootlog.writelines(f"cfg_status copied to boot at {datetime.datetime.now()}\n")
+               log_dir = contents[6].strip()
+               bootlog.writelines(f"log_dir copied to boot at {datetime.datetime.now()}\n")
+               # Checks all the data by invoking
+               print("Begining system integrity check")
+               force_reconfig=os_int_check(sys_dir,usr_name,mchn_name,cfg_status,log_dir,force_reconfig)
+               if force_reconfig == True:
+                    bootlog.writelines(f"Boot failed due to multiple data corruptions, began reconfiguration at {datetime.datetime.now()}\n")
+                    os_config()
+               else:
+                    bootlog.writelines(f"Boot succeded, logon launched at {datetime.datetime.now()}\n")
+                    logon()
+            else:
+                print("The OS configuration file does not exist, you will be prompted to configure the OS once again")
+                bootlog.writelines(f"Boot failed due to the lack of the configuration file, began reconfiguration at {datetime.datetime.now()}\n")
                 os_config()
-           else:
-                logon()
-        else:
-            print("The OS configuration file does not exist, you will be prompted to configure the OS once again")
-            os_config()
     else:
-        print("The main system path is missing, you will be prompted to configure the system")
-        os_config()
-        # Finalizes boot, clears the screen and passes to logon
-    
-    
-# TO DO: ADD THE BOOT LOG FUNCTION
+        with open("syslog/boot.log", "w") as bootlog:
+            bootlog.writelines(f"Boot failed due to lack of the main system path, began reconfiguration at {datetime.datetime.now()}\n")
+            print("The main system path is missing, you will be prompted to configure the system")
+            os_config()
 
 
 # Defines the function to check for errors within the system config
@@ -48,7 +56,7 @@ def os_int_check(sys_dir, usr_name, mchn_name, cfg_status,log_dir,force_reconfig
    with open("hashes.chk", "r") as hashes:
     checklist = hashes.readlines()
     if cfg_status == "True":
-        with open("checklog.log",'w') as checklog:
+        with open("syslog/checklog.log",'w') as checklog:
             if hashlib.sha256(sys_dir.encode()).hexdigest() == checklist[0].strip():
                 print("sys_dir has passed the integrity check, moving on...")
                 checklog.writelines(f"sys_dir has passed the integrity check at: {datetime.datetime.now()}\n")
@@ -80,11 +88,11 @@ def os_int_check(sys_dir, usr_name, mchn_name, cfg_status,log_dir,force_reconfig
                 checklog.writelines(f"log_dir has failed the system integrity check at {datetime.datetime.now()} issues with logs might arise, please verify line 6 in the configuration file\n")
                 err_cntr += 1
 
-                if err_cntr >= 2:
-                    print(f"The system check has failed, you will be prompted to reconfigure the OS")
-                    force_reconfig = True
-                else:
-                    force_reconfig = False
+            if err_cntr >= 2:
+                print(f"The system check has failed, you will be prompted to reconfigure the OS")
+                force_reconfig = True
+            else:
+                force_reconfig = False
     else:
         print(f"cfg_status is set as false, if you have configured the system, please check the file")
     return(force_reconfig)
@@ -140,6 +148,7 @@ def os_config():
 # Defines the function responsible for logon
 def logon():
     # Gets the username
+    logged_on = False
     username = input("Username: ")
     with open("sysconf/sysconfig.cnfg","r") as config:
         confcon = config.readlines()
@@ -152,6 +161,8 @@ def logon():
                     if (hashlib.sha256(username.encode()).hexdigest() == hashcon[1].strip()) and (hashlib.sha256(password.encode()).hexdigest() == confcon[3].strip()):
                         print(f"Welcome to ArchieOS: {username}")
                         pass_true = True
+                        logged_on = True
+                        main_cli(logged_on)
                     else:
                         print("Please try again")    
                         
@@ -159,11 +170,11 @@ def logon():
             with open("hashes.chk", "r") as hashes:
                 hashcon = hashes.readlines()
                 if (hashlib.sha256(username.encode()).hexdigest() == hashcon[1].strip()):
-                    pass
+                    print(f"Welcome to ArchieOS: {username}")
                     # Pass to main command line (WIP)
 
-def main_cli():
-    # TO DO: make the main CLI work
-    pass
+def main_cli(logged_on):
+    print("CLI is online")
+    while logged_on == True:
+        usr_cmd = input()        
 
-os_boot()
