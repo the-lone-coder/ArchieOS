@@ -3,7 +3,7 @@ import sys
 import os
 import datetime
 import hashlib
-
+import subprocess
 # Defines the boot function for the OS
 def os_boot():
     # Gets the current date and time
@@ -31,7 +31,8 @@ def os_boot():
     else:
         print("The main system path is missing, you will be prompted to configure the system")
         os_config()
-        # Finalizes boot and passes to logon
+        # Finalizes boot, clears the screen and passes to logon
+        subprocess.call("clear")
         logon()
 # TO DO: ADD THE BOOT LOG FUNCTION
 
@@ -112,18 +113,21 @@ def os_config():
         
 # Defines the function responsible for logon
 def logon():
-    # Gets the username and password
+    # Gets the username
     username = input("Username: ")
-    password = input("Password (if none leave empty): ")
-
-    # Checks username against config and hash and checks password against hash
-    with open("config.cnfg", "r") as config:
+    with open("config.cnfg","r") as config:
         confcon = config.readlines()
-        with open("hashes.chk","r") as hashes:
-            hashcon = hashes.readlines()
-            if (username == confcon[1].strip() and hashlib.sha256(username.encode()).hexdigest() == hashcon[1].strip()) and (hashlib.sha256(password.encode()).hexdigest() == confcon[3].strip()):
-                 print(f"Logon successful, welcome to ArchieOS {username}")
-    # Passes to TUI renderer 
+        if confcon[2] == "y":
+            password = input("Password: ")
+            with open("hashes.chk", "r") as hashes:
+                hashcon = hashes.readlines()
+                if (hashlib.sha256(username.encode()).hexdigest() == hashcon[1]) and (hashlib.sha256(password.encode()).hexdigest() == confcon[3]):
+                    print(f"Welcome to ArchieOS: {username}")
+                    # Pass to TUI renderer (WIP)
+        else:
+            if (hashlib.sha256(username.encode()).hexdigest() == hashcon[1]) and (username == confcon[1]):
+                pass
+                # Pass to TUI rendered (WIP)
 def tui_renderer():
     # TO DO: ADD TUI
     pass
